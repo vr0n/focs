@@ -104,7 +104,7 @@ if [ ! $VAL03 -eq 0 ]; then
 			echo -e "${INFO}however, AFL itself is finnicky, so you may have an issue with the 'make' or some dependencies.${NC}"	
 			echo -e "${INFO}command. To quit now, hit 'q', otheriwse, enter any other key to continue.${NC}"	
 			read x
-
+	esac
 
 	if [ $x == 'q' ]; then
 		clear
