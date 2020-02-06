@@ -779,13 +779,16 @@ if [[ -z $1 ]]; then
 		;;
       "run")
         focs_firmware-prep
+        break
         ;;
       # TODO Enable option to clean single firmware
       "clean")
         clean_firmware
+        break
         ;;
       "help")
 		dialog
+		break
 		;;
       "exit")
         break
@@ -799,20 +802,25 @@ else
   opt=$1
   case $opt in
     install)
-      focs_install 
+      focs_install
+      break
       ;;
     extract)
 	  extract $2
+	  break
 	  ;;
     run)
       focs_firmware-prep $2 $3
+      break
       ;;
     # TODO Enable option to clean single firmware
     clean)
       clean_firmware
+      break
       ;;
     "help")
 	  dialog
+	  break
 	  ;;
     exit)
       break
