@@ -32,9 +32,9 @@ This project is super experimental. Use at your own peril.
 ### Getting Started
 - clone the repo
 ``` 
-- git --recurse-submodules [REPO]
+git --recurse-submodules [REPO]
 ```
-- ./focs.sh 
+./focs.sh 
 
 ### Features in Progress
 - [x] Menu mode (utilize cli to run focs)
@@ -58,21 +58,19 @@ Thanks @trvon for helping me get back on track with this and for the awesome add
 
 ### Changelog
 
-2020-02-06:	
-
-- Removed run_all_the_things that was there for testing.
-- Fixed install issue. AFL is being grabbed from lcamtuf for now.
-- Added some comments for clarity of what I was trying to do. 
-- Extract function is more modular. I was unnecessarily invoking QEMU at a time when it didn't matter
-- Added qemu_mode_setup function. This is almost entirel code from AFL's qemu script. Wasn't necessary to add it several times in my script
-- Fixed issue with broken symlink between the auto-fuzz script, though this was a superficial change since that script is now integrated
-- Fixed issue with QEMU_LD_PREFIX variable. This is necessary for QEMU mode to work. For those who hit similar issues: It must be set to the directory that *houses* the 'lib' directory, not the 'lib' directory itself. 
-- Fixed afl-cmin issue. This issue was related to the QEMU_LD_PREFIX issue, but it was also due to an error in the ulimit code I had originally.
-- Removed *several* unnecessary lines of code. More to come. 
-- Made some superficial changes to prevent 'echo' from printing character codes. 
-- Re-added in the blue color scheme, but I might remove all colors altogether, as I wasn't considering customized terminals when I added that.
-- Fixed some of the messages. They were to wordy, and hadn't been updated in too long.
-- Removed the old README. Sorry to the guy who forked the project with that README. You were probably very confused and annoyed.
-- Minor bug fixes along the way.
-- Commented out the check for previous jobs due to a continuous error. This needs to be fixed ASAP as that function can save you from losing crashes
-- Removed uneccessary code based on how afl directory was previously calculated
+2020-02-06:	1. Removed run_all_the_things that was there for testing.
+		2. Fixed install issue. AFL is being grabbed from lcamtuf for now.
+		3. Added some comments for clarity of what I was trying to do. 
+		4. Extract function is more modular. I was unnecessarily invoking QEMU at a time when it didn't matter
+		5. Added qemu_mode_setup function. This is almost entirel code from AFL's qemu script. Wasn't necessary to add it several times in my script
+		6. Fixed issue with broken symlink between the auto-fuzz script, though this was a superficial change since that script is now integrated
+		7. Fixed issue with QEMU_LD_PREFIX variable. This is necessary for QEMU mode to work. For those who hit similar issues: It must be set to the directory that *houses* the 'lib' directory, not the 'lib' directory itself. 
+		8. Fixed afl-cmin issue. This issue was related to the QEMU_LD_PREFIX issue, but it was also due to an error in the ulimit code I had originally.
+		9. Removed *several* unnecessary lines of code. More to come. 
+		10. Made some superficial changes to prevent 'echo' from printing character codes. 
+		11. Re-added in the blue color scheme, but I might remove all colors altogether, as I wasn't considering customized terminals when I added that.
+		12. Fixed some of the messages. They were to wordy, and hadn't been updated in too long.
+		13. Removed the old README. Sorry to the guy who forked the project with that README. You were probably very confused and annoyed.
+		14. Minor bug fixes along the way.
+		15. Commented out the check for previous jobs due to a continuous error. This needs to be fixed ASAP as that function can save you from losing crashes
+		16. Removed uneccessary code based on how afl directory was previously calculated
