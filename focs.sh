@@ -10,7 +10,7 @@ clean_firmware() {
     ;;
     *) echo -e "${INFO}Cleaning EVERYTHING...${NC}"
 		# Added functionality to not remove afl dir 
-		sudo rm -fr /usr/share/focs/firmware-library /usr/share/focs/results
+		sudo rm -fr /usr/share/focs/firmware-library/ /usr/share/focs/results/
 
   		user=$USER
 		sudo chown $user:$user -R /usr/share/focs
@@ -192,7 +192,20 @@ focs_install() {
 					clear
 					echo -e "${INFO}Well, it was worth a shot...${NC}" && exit 1
 				else 
-					{ sudo apt install -y git wget python flex coreutils binwalk qemu-user libtool wget python build-essential libtool-bin bison libglib2.0-dev libglib2.0 2>&- && echo -e "${INFO}Installing dependencies...${NC}"; } || { echo -e "${ERROR}Uh oh... issue installing dependencies....${NC}" && exit 1; }
+					{ sudo apt install -y git wget python flex coreutils binwalk qemu-user libtool wget python build-essential libtool-bin libpixman-1-dev bison libglib2.0-dev libglib2.0 2>&- && echo -e "${INFO}Installing dependencies...${NC}"; } || { echo -e "${ERROR}Uh oh... issue installing dependencies....${NC}" && exit 1; }
+				fi
+				;;
+			"Ubuntu 18.04*")
+				echo -e "${INFO}It looks like you are running this script on $DESK${NC}"
+				echo -e "${INFO}If you don't want to install the dependencies for some reason, press 'q', otherwise,${NC}"
+				echo -e "${INFO}press any other key to continue with the installation.${NC}"
+				read x;
+
+				if [[ $x == 'q' ]]; then
+					clear
+					echo -e "${INFO}Well, it was worth a shot...${NC}" && exit 1
+				else 
+					{ sudo apt install -y build-essential libtool-bin automake autoconf bison glib2-dev libglib2.0-dev libpixman-1-dev binwalk linux-libc-dev libc6-dev-i386 2>&- && echo -e "${INFO}Installing dependencies...${NC}"; } || { echo -e "${ERROR}Uh oh... issue installing dependencies....${NC}" && exit 1; }
 				fi
 				;;
 			*)
@@ -469,11 +482,6 @@ focs_install() {
 }
 
 focs_firmware-prep() {
-	# Variables are in the scope of function
-	DIR=1
-	args=1
-	target=1
-
 	# Scripting mode if args passed
 	if [[ -z $1 ]]; then
 		echo -e "${INFO}Select the firmware image you would like to fuzz: ${NC}"
@@ -485,8 +493,6 @@ focs_firmware-prep() {
 			[[ -n $file ]] || { echo -e "${WARN} Invalid choice. Try again..." >&2; continue; }
 			break
 		done
-
-		echo "$f"
 		read -r file <<<"$f"
 	fi
 
@@ -507,6 +513,7 @@ focs_firmware-prep() {
 		# TODO This needs to be stream lined
 		echo -e "${INFO}Specify the args you would like to use for the binary"
 		read -a args
+
 		if [[ -z $args ]]; then
 			args="seed"
 		fi
@@ -519,10 +526,7 @@ focs_firmware-prep() {
 			break 
 		done
 		read -r THEARCH <<<"$THEARCH"
-		DIR=$(find /usr/share/focs/ -iname $THEARCH_$target)
 	fi
-
-	echo "$args"
 
 	# Appending architecture to scripted version
 	if [[ ! -z $1 ]]; then
@@ -530,8 +534,13 @@ focs_firmware-prep() {
 		# file="$${1}.extracted"
 	fi
 
+	# TODO: Add check if path exists
+	# This needs to be reworked
+	BIN_PATH=$(find /usr/share/focs/firmware-library/*$file* -iname $target | grep bin)
+	# Convert array into string
+	args=$( IFS=$'-'; echo "${args[*]}" )
 	# Binary to fuzz, qemu arguments, architecture, path of original firmware
-	auto-fuzz $DIR $args $THEARCH $file
+	auto-fuzz $BIN_PATH $args $THEARCH $file
 }
 
 
@@ -591,8 +600,10 @@ auto-fuzz () {
 	echo -e "${INFO}Now we are going to minimize the seed corpus.${NC}"
 	echo -e "${INFO}Errors are likely to occur here, so if problems persist,${NC}"
 	echo -e "${INFO}Comment out the command 'afl-cmin' in the auto-fuzz function${NC}" && sleep 3
-
-	{ afl-cmin -Q -m $MEM -i in/ -o in2/ $1 $2 && echo -e "${INFO}Corpus seemed to minimize successfully!${NC}"; } || { echo -e "${ERROR}An error occurred with 'afl-cmin'. Scroll up for more details!${NC}" && exit 1; }
+	
+	# Array does weird stuff on ubuntu
+	args=$(echo "$1" | tr '-' ' ')
+	{ afl-cmin -m $MEM -Q -i in/ -o in2/ $1 $args && echo -e "${INFO}Corpus seemed to minimize successfully!${NC}"; } || { echo -e "${ERROR}An error occurred with 'afl-cmin'. Scroll up for more details!${NC}" && exit 1; }
 
 
 	# TODO: Finishing moving orginal test cases for genertated cases
@@ -638,10 +649,11 @@ auto-fuzz () {
 	# 	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $2
 	# fi
 	echo -e "${INFO}Naming master fuzzer FOCS0${NC}"
-	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $2
+	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $args
 }
 
 extract () {
+	user=$USER
 	clear
 
 	echo -e "${INFO}Running the extraction function:${NC}"
@@ -670,6 +682,7 @@ extract () {
 
 	# move file to focs directory for extraction and clean up
 	# TODO: change the 'cp' to 'mv' once testing is done.
+
 	sudo cp $file /usr/share/focs/ || { echo -e "${ERROR}Couldn't move the file to the /usr/share/focs directory... check that it exists already.${NC}" && exit 1; };
 
 	# Copy files from paths
@@ -678,9 +691,10 @@ extract () {
 	cd /usr/share/focs/ || { echo -e "${ERROR}Issue jumping into the /usr/share/focs directory. Check that it exists.${NC}" && exit 1; };
 
 	# extract to 
-	sudo binwalk -e /usr/share/focs/$file || { echo -e "${ERROR}Unfortunately, binwalk threw an issue... This can't be fixed by me, I'm afraid...${NC}" && exit 1; }; 
+	sudo binwalk -e /usr/share/focs/$file || { echo -e "${ERROR}Unfortunately, binwalk threw an issue... This can't be fixed by me, I'm afraid...${NC}" && exit 1; };
+	sudo chown $user -R /usr/share/focs
 
-	find _*/ -name 'bin'
+	# find _*/ -name 'bin'
 
 	ISSUE=$(echo "$?")
 
@@ -691,10 +705,11 @@ extract () {
 		echo -e "${ERROR}Darn... binwalk didn't extract the image perfectly...${NC}" && exit 1
 	fi;
 
-	THEDIR="$(find _*/ -name 'bin' | sort | head -1)"
+	# TODO: Changing this to static set of sqash
+	THEDIR="$(find _*/ -name 'bin' | grep 'squashfs' | sort | head -1)"
 	THISDIR="$(echo $PWD)"
 	# get the architecture for naming
-	THEARCH="$(file -b -e elf $THEDIR/* | grep -o ','.*',' | tr -d ' ' | tr -d ',' | uniq | tr '[:upper:]' '[:lower:]')"
+	THEARCH="$(file -b -e elf $THEDIR/* | grep -i elf | grep -o ','.*',' | tr -d ' ' | tr -d ',' | uniq | tr '[:upper:]' '[:lower:]')"
 	NEWDIR="$(echo '/usr/share/focs/firmware-library/'$THEARCH$(echo _*))"
 
 	# move the extracted file and rename as new directory
