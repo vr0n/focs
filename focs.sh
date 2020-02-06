@@ -479,13 +479,14 @@ focs_firmware-prep() {
 		echo -e "${INFO}Select the firmware image you would like to fuzz: ${NC}"
 
 		# Options from directory
-		f=$(ls /usr/share/focs/firmware-library)
+		f=( $(ls /usr/share/focs/firmware-library | grep "extracted") )
 		PS3="Select an option: "
 		select file in "${f[@]}"; do
 			[[ -n $file ]] || { echo -e "${WARN} Invalid choice. Try again..." >&2; continue; }
 			break
 		done
-		# read -r file <<<$( echo "$f" | cut -d "_" -f 2)
+
+		echo "$f"
 		read -r file <<<"$f"
 	fi
 
@@ -661,15 +662,18 @@ extract () {
 	if [[ -z $1 ]]; then
 		echo -e "\n\n${ACT}What is the name of the file you would like to extract? (relative or fixed path accepted)${NC}"
 		read file
-		file=$(basename $file)
+		# file=$(basename $file)
 
 	else
-		file=$(basename $1)
+		file=$1
 	fi
 
 	# move file to focs directory for extraction and clean up
 	# TODO: change the 'cp' to 'mv' once testing is done.
 	sudo cp $file /usr/share/focs/ || { echo -e "${ERROR}Couldn't move the file to the /usr/share/focs directory... check that it exists already.${NC}" && exit 1; };
+
+	# Copy files from paths
+	file=$(basename $file)
 
 	cd /usr/share/focs/ || { echo -e "${ERROR}Issue jumping into the /usr/share/focs directory. Check that it exists.${NC}" && exit 1; };
 
