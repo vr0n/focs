@@ -223,9 +223,6 @@ focs_install() {
 			echo -e "${INFO}Probably a good decision...${NC}" && exit 1
 		fi
 
-		# Dependencies specifically for sasquatch
-		#sudo apt-get install -y build-essential liblzma-dev liblzo2-dev zlib1g-dev
-
 		THISDIR="$(echo $PWD)"
 
 		# Grab latest version of AFL
@@ -252,11 +249,6 @@ focs_install() {
 
 		{ cd qemu_mode && echo -e "${INFO}qemu_mode directory is where it's supposed to be...${NC}"; } || { echo -e "${ERROR}qemu_mode directory is not where it's supposed to be...${NC}" && exit 1; }
 
-		# Decided to host my own version of QEMU # So I've commented out the lines to grab a new copy
-		# VERSION="2.10.0"
-		# QEMU_URL="http://download.qemu-project.org/qemu-${VERSION}.tar.xz"
-		# QEMU_SHA384="68216c935487bc8c0596ac309e1e3ee75c2c4ce898aab796faa321db5740609ced365fedda025678d072d09ac8928105"
-
 		VERSION="3.1.1"
 		QEMU_URL="http://download.qemu-project.org/qemu-${VERSION}.tar.xz"
 		QEMU_SHA384="28ff22ec4b8c957309460aa55d0b3188e971be1ea7dfebfb2ecc7903cd20cfebc2a7c97eedfcc7595f708357f1623f8b"
@@ -264,24 +256,18 @@ focs_install() {
 		echo "[*] Performing basic sanity checks..."
 
 		if [ ! "`uname -s`" = "Linux" ]; then
-
 		  echo "[-] Error: QEMU instrumentation is supported only on Linux."
 		  exit 0
-
 		fi
 
 		if [ ! -f "patches/afl-qemu-cpu-inl.h" -o ! -f "../config.h" ]; then
-
 		  echo "[-] Error: key files not found - wrong working directory?"
 		  exit 1
-
 		fi
 
 		if [ ! -f "../afl-showmap" ]; then
-
 		  echo "[-] Error: ../afl-showmap not found - compile AFL first!"
 		  exit 1
-
 		fi
 
 
@@ -290,32 +276,25 @@ focs_install() {
 		  T=`which "$i" 2>/dev/null`
 
 		  if [ "$T" = "" ]; then
-
 		    echo "[-] Error: '$i' not found, please install first."
 		    exit 1
-
 		  fi
 
 		done
 
 		if [ ! -d "/usr/include/glib-2.0/" -a ! -d "/usr/local/include/glib-2.0/" ]; then
-
 		  echo "[-] Error: devel version of 'glib2' not found, please install first."
 		  exit 1
-
 		fi
 
 		if echo "$CC" | grep -qF /afl-; then
-
 		  echo "[-] Error: do not use afl-gcc or afl-clang to compile this tool."
 		  exit 1
-
 		fi
 
 		echo "[+] All checks passed!"
 
 		ARCHIVE="`basename -- "$QEMU_URL"`"
-
 		CKSUM=`sha384sum -- "$ARCHIVE" 2>/dev/null | cut -d' ' -f1`
 
 		if [ ! "$CKSUM" = "$QEMU_SHA384" ]; then
@@ -328,26 +307,19 @@ focs_install() {
 		  done
 
 		  CKSUM=`sha384sum -- "$ARCHIVE" 2>/dev/null | cut -d' ' -f1`
-
 		fi
 
 		if [ "$CKSUM" = "$QEMU_SHA384" ]; then
-
 		  echo "[+] Cryptographic signature on $ARCHIVE checks out."
-
 		else
-
 		  echo "[-] Error: signature mismatch on $ARCHIVE (perhaps download error?), removing archive ..."
 		  rm -f "$ARCHIVE"
 		  exit 1
-
 		fi
 
 		echo "[*] Uncompressing archive (this will take a while)..."
-
 		rm -rf "qemu-${VERSION}" || exit 1
 		tar xf "$ARCHIVE" || exit 1
-
 		echo "[+] Unpacking successful."
 
 		if [ -n "$HOST" ]; then
@@ -382,7 +354,6 @@ focs_install() {
 		echo "[+] Patching done."
 
 		if [ "$STATIC" = "1" ]; then
-
 		  CFLAGS="-O3 -ggdb" ./configure --disable-bsd-user --disable-guest-agent --disable-strip --disable-werror \
 			  --disable-gcrypt --disable-debug-info --disable-debug-tcg --disable-tcg-interpreter \
 			  --enable-attr --disable-brlapi --disable-linux-aio --disable-bzip2 --disable-bluez --disable-cap-ng \
@@ -395,38 +366,29 @@ focs_install() {
 			  --enable-linux-user --disable-system --disable-blobs --disable-tools \
 			  --target-list="${CPU_TARGET}-linux-user" --static --disable-pie --cross-prefix=$CROSS_PREFIX || exit 1
 
-		else
-
-		  # --enable-pie seems to give a couple of exec's a second performance
-		  # improvement, much to my surprise. Not sure how universal this is..
-		  
+		else		  
 		  CFLAGS="-O3 -ggdb" ./configure --disable-system \
 		    --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
 		    --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm $CROSS_PREFIX || exit 1
-
 		fi
 
 		echo "[+] Configuration complete."
-
 		echo "[*] Attempting to build QEMU (fingers crossed!)..."
 
 		make -j `nproc` || exit 1
 
 		echo "[+] Build process successful!"
-
 		echo "[*] Copying binary..."
 
 		cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
 
 		cd ..
 		ls -l ../afl-qemu-trace || exit 1
-
 		echo "[+] Successfully created '../afl-qemu-trace'."
 
 		if [ "$ORIG_CPU_TARGET" = "" ]; then
 
 		  echo "[*] Testing the build..."
-
 		  cd ..
 
 		  make >/dev/null || exit 1
@@ -446,22 +408,17 @@ focs_install() {
 		  rm -f .test-instr0 .test-instr1
 
 		  if [ "$DR" = "0" ]; then
-
 		    echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
 		    exit 1
-
 		  fi
 
 		  echo "[+] Instrumentation tests passed. "
 		  echo "[+] All set, you can now use the -Q mode in afl-fuzz!"
-
 		  cd qemu_mode || exit 1
 
 		else
-
 		  echo "[!] Note: can't test instrumentation when CPU_TARGET set."
 		  echo "[+] All set, you can now (hopefully) use the -Q mode in afl-fuzz!"
-
 		fi
 
 		echo "[+] Building libcompcov ..."
@@ -469,7 +426,6 @@ focs_install() {
 		echo "[+] Building unsigaction ..."
 		make -C unsigaction && echo "[+] unsigaction ready"
 		echo "[+] All done for qemu_mode, enjoy!"
-
 		echo -e "${INFO}Patching done.${NC}"
 
 		cd $THISDIR
@@ -486,7 +442,6 @@ focs_firmware-prep() {
 	if [[ -z $1 ]]; then
 		echo -e "${INFO}Select the firmware image you would like to fuzz: ${NC}"
 
-		# Options from directory
 		f=( $(ls /usr/share/focs/firmware-library | grep "extracted") )
 		PS3="Select an option: "
 		select file in "${f[@]}"; do
@@ -535,7 +490,6 @@ focs_firmware-prep() {
 	fi
 
 	# TODO: Add check if path exists
-	# This needs to be reworked
 	BIN_PATH=$(find /usr/share/focs/firmware-library/*$file* -iname $target | grep bin)
 	# Convert array into string
 	args=$( IFS=$'-'; echo "${args[*]}" )
@@ -557,8 +511,7 @@ auto-fuzz () {
 		exit 1
 	fi;
 
-	#TODO: figure out if 'performance' error is consistent.
-	# if so, add that in here as well.
+	#TODO: figure out if 'performance' error is consistent. if so, add that in here as well.
 	echo 'core' | sudo tee /proc/sys/kernel/core_pattern
 
 	qemu_mode_setup $3
@@ -605,7 +558,6 @@ auto-fuzz () {
 	args=$(echo "$1" | tr '-' ' ')
 	{ afl-cmin -m $MEM -Q -i in/ -o in2/ $1 $args && echo -e "${INFO}Corpus seemed to minimize successfully!${NC}"; } || { echo -e "${ERROR}An error occurred with 'afl-cmin'. Scroll up for more details!${NC}" && exit 1; }
 
-
 	# TODO: Finishing moving orginal test cases for genertated cases
 	if [[ ! -d "in.bak" ]] ; then
 		mv in in.bak
@@ -615,39 +567,8 @@ auto-fuzz () {
 	rm -fr in
 	mv in2 in
 
-	# TODO: No save and not continue
-	# commenting this out for now
-	# script threw error: 'ls: cannot access 'out/*': No such file or directory'
-	# solve ASAP
-	#if [[ -z $(ls out/*) ]] ; then
-	#	echo -e "${INFO} Would you like to continue your previous job? (Y/n)"
-	#	read OPT
-
-	#	if [[ ${OPT,,} == 'n' ]]; then
-	#        	rm -fr out/*
-	#        	rm -fr in
- 	#	else
-	#		rm -rf in/*
-        #   		mv out/{crashes/*,hangs/*} in/
-	#   	fi
-	#fi
-
 	clear
 
-	# CPU=$(nproc)
-	# echo "You have $CPU available, how many would you like to use? (default 1)"
-	# read CPU
-	# if [[ $CPU -gt 1 ]] && [[ -z $CPU ]]; then
-	# 	echo "${INFO} Naming master fuzzer FOCS0${IN}"
-	# 	nohup afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $2
-	# 	# TODO: Figure out how to kill slaves
-	# 	for core in {1..$CPU}; do
-	# 		nohup afl-fuzz -Q -m $MEM -i in/ -o out/ -S "FOCS$core" $1 $2 &>/dev/null &
-	# 	done
-    # else
-	#  	echo "${INFO} Naming master fuzzer FOCS0${IN}"
-	# 	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $2
-	# fi
 	echo -e "${INFO}Naming master fuzzer FOCS0${NC}"
 	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $args
 }
@@ -680,9 +601,6 @@ extract () {
 		file=$1
 	fi
 
-	# move file to focs directory for extraction and clean up
-	# TODO: change the 'cp' to 'mv' once testing is done.
-
 	sudo cp $file /usr/share/focs/ || { echo -e "${ERROR}Couldn't move the file to the /usr/share/focs directory... check that it exists already.${NC}" && exit 1; };
 
 	# Copy files from paths
@@ -693,8 +611,6 @@ extract () {
 	# extract to 
 	sudo binwalk -e /usr/share/focs/$file || { echo -e "${ERROR}Unfortunately, binwalk threw an issue... This can't be fixed by me, I'm afraid...${NC}" && exit 1; };
 	sudo chown $user -R /usr/share/focs
-
-	# find _*/ -name 'bin'
 
 	ISSUE=$(echo "$?")
 
