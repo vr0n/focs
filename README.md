@@ -58,6 +58,9 @@ Thanks @trvon for helping me get back on track with this and for the awesome add
 
 ### Changelog
 
+2020-02-07:
+- renamed some functions to make them easier to search
+
 2020-02-06:	
 
 - Removed run_all_the_things that was there for testing.
