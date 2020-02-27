@@ -316,7 +316,7 @@ focs_firmware-prep() {
 		echo -e "${INFO}Select the firmware image you would like to fuzz: ${NC}"
 
 		# Options from directory
-		f=$(ls /usr/share/focs/firmware-library)
+		f=( $(ls /usr/share/focs/firmware-library | grep 'extracted') )
 		PS3="Select an option: "
 		select file in "${f[@]}"; do
 			[[ -n $file ]] || { echo -e "${WARN} Invalid choice. Try again..." >&2; continue; }
@@ -331,7 +331,8 @@ focs_firmware-prep() {
 
 		# All just to look nice :)
 		tfile=$(tempfile)
-		file $(find /usr/share/focs/firmware-library/*$file* -type f -executable) | grep -i 'stripped' | grep -v 'shared\|pie' | awk -F: '{print $1}' | sed 's:.*/::' | sort > $tfile
+		file $(find /usr/share/focs/firmware-library/*$file* -type f -executable) | grep -i 'executable' | grep -v 'shared\|pie' | awk -F: '{print $1}' | sed 's:.*/::' | sort > $tfile
+
 		column -x $tfile
 		rm $tfile
 		echo -e "\n${INFO}Type binary to fuzz${NC}"
@@ -355,7 +356,7 @@ focs_firmware-prep() {
 			break 
 		done
 		read -r THEARCH <<<"$THEARCH"
-		DIR=$(find /usr/share/focs/ -iname $THEARCH_$target)
+		DIR=$(find /usr/share/focs/ -iname $THEARCH_$target | grep bin | head -n 1 )
 	fi
 
 	echo "$args"
@@ -367,6 +368,8 @@ focs_firmware-prep() {
 	fi
 
 	# Binary to fuzz, qemu arguments, architecture, path of original firmware
+	args=$( IFS=$'-'; echo "${args[*]}" )
+
 	focs_auto-fuzz $DIR $args $THEARCH $file
 }
 
@@ -428,7 +431,9 @@ focs_auto-fuzz () {
 	echo -e "${INFO}Errors are likely to occur here, so if problems persist,${NC}"
 	echo -e "${INFO}Comment out the command 'afl-cmin' in the focs_auto-fuzz function${NC}" && sleep 3
 
-	{ afl-cmin -Q -m $MEM -i in/ -o in2/ $1 $2 && echo -e "${INFO}Corpus seemed to minimize successfully!${NC}"; } || { echo -e "${ERROR}An error occurred with 'afl-cmin'. Scroll up for more details!${NC}" && exit 1; }
+	# testing to see if tr makes args work
+	args=$(echo "$2" | tr '-' ' ')
+	{ afl-cmin -Q -m $MEM -i in/ -o in2/ $1 $args && echo -e "${INFO}Corpus seemed to minimize successfully!${NC}"; } || { echo -e "${ERROR}An error occurred with 'afl-cmin'. Scroll up for more details!${NC}" && exit 1; }
 
 
 	# TODO: Finishing moving orginal test cases for genertated cases
@@ -474,7 +479,7 @@ focs_auto-fuzz () {
 	# 	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $2
 	# fi
 	echo -e "${INFO}Naming master fuzzer FOCS0${NC}"
-	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $2
+	afl-fuzz -Q -m $MEM -i in/ -o out/ -M FOCS0 $1 $args
 }
 
 focs_extract () {
@@ -517,12 +522,14 @@ focs_extract () {
 
 	ISSUE=$(echo "$?")
 
+	# if binwalk doesn't work, check that alternatives are installed
+	# if they are, try them out.
 	if [ "$ISSUE" -eq 0 ]
 	then
-		echo -e "${INFO}Awesome! binwalk extracted the image perfectly!${NC}"
-	else
 		echo -e "${ERROR}Darn... binwalk didn't extract the image perfectly...${NC}" && exit 1
 	fi;
+
+	echo -e "${INFO}Awesome! Firmware was extracted perfectly!${NC}"
 
 	THEDIR="$(find _*/ -name 'bin' | sort | head -1)"
 	THISDIR="$(echo $PWD)"
