@@ -1,0 +1,846 @@
+318c318,338
+<   /* Let's start by drawing a centered banner. */
+---
+> //  /* Let's start by drawing a centered banner. */
+> //
+> //  banner_len = (afl->crash_mode ? 24 : 22) + strlen(VERSION) +
+> //               strlen(afl->use_banner) + strlen(afl->power_name) + 3 + 5;
+> //  banner_pad = (79 - banner_len) / 2;
+> //  memset(tmp, ' ', banner_pad);
+> //
+> //#ifdef HAVE_AFFINITY
+> //  sprintf(
+> //      tmp + banner_pad,
+> //      "%s " cLCY VERSION cLGN " (%s) " cPIN "[%s]" cBLU " {%d}",
+> //      afl->crash_mode ? cPIN "peruvian were-rabbit" : cYEL "american fuzzy lop",
+> //      afl->use_banner, afl->power_name, afl->cpu_aff);
+> //#else
+> //  sprintf(
+> //      tmp + banner_pad, "%s " cLCY VERSION cLGN " (%s) " cPIN "[%s]",
+> //      afl->crash_mode ? cPIN "peruvian were-rabbit" : cYEL "american fuzzy lop",
+> //      afl->use_banner, afl->power_name);
+> //#endif                                                     /* HAVE_AFFINITY */
+> //
+> //  SAYF("\n%s\n", tmp);
+320,340c340
+<   banner_len = (afl->crash_mode ? 24 : 22) + strlen(VERSION) +
+<                strlen(afl->use_banner) + strlen(afl->power_name) + 3 + 5;
+<   banner_pad = (79 - banner_len) / 2;
+<   memset(tmp, ' ', banner_pad);
+< 
+< #ifdef HAVE_AFFINITY
+<   sprintf(
+<       tmp + banner_pad,
+<       "%s " cLCY VERSION cLGN " (%s) " cPIN "[%s]" cBLU " {%d}",
+<       afl->crash_mode ? cPIN "peruvian were-rabbit" : cYEL "american fuzzy lop",
+<       afl->use_banner, afl->power_name, afl->cpu_aff);
+< #else
+<   sprintf(
+<       tmp + banner_pad, "%s " cLCY VERSION cLGN " (%s) " cPIN "[%s]",
+<       afl->crash_mode ? cPIN "peruvian were-rabbit" : cYEL "american fuzzy lop",
+<       afl->use_banner, afl->power_name);
+< #endif                                                     /* HAVE_AFFINITY */
+< 
+<   SAYF("\n%s\n", tmp);
+< 
+< /* "Handy" shortcuts for drawing boxes... */
+---
+>   /* "Handy" shortcuts for drawing boxes... */
+352,749c352,749
+<   /* Lord, forgive me this. */
+< 
+<   SAYF(SET_G1 bSTG bLT bH bSTOP cCYA
+<        " process timing " bSTG bH30 bH5 bH bHB bH bSTOP cCYA
+<        " overall results " bSTG bH2 bH2 bRT "\n");
+< 
+<   if (afl->dumb_mode) {
+< 
+<     strcpy(tmp, cRST);
+< 
+<   } else {
+< 
+<     u64 min_wo_finds = (cur_ms - afl->last_path_time) / 1000 / 60;
+< 
+<     /* First queue cycle: don't stop now! */
+<     if (afl->queue_cycle == 1 || min_wo_finds < 15)
+<       strcpy(tmp, cMGN);
+<     else
+< 
+<         /* Subsequent cycles, but we're still making finds. */
+<         if (afl->cycles_wo_finds < 25 || min_wo_finds < 30)
+<       strcpy(tmp, cYEL);
+<     else
+< 
+<         /* No finds for a long time and no test cases to try. */
+<         if (afl->cycles_wo_finds > 100 && !afl->pending_not_fuzzed &&
+<             min_wo_finds > 120)
+<       strcpy(tmp, cLGN);
+< 
+<     /* Default: cautiously OK to stop? */
+<     else
+<       strcpy(tmp, cLBL);
+< 
+<   }
+< 
+<   SAYF(bV bSTOP "        run time : " cRST "%-33s " bSTG bV bSTOP
+<                 "  cycles done : %s%-5s " bSTG              bV "\n",
+<        DTD(cur_ms, afl->start_time), tmp, DI(afl->queue_cycle - 1));
+< 
+<   /* We want to warn people about not seeing new paths after a full cycle,
+<      except when resuming fuzzing or running in non-instrumented mode. */
+< 
+<   if (!afl->dumb_mode &&
+<       (afl->last_path_time || afl->resuming_fuzz || afl->queue_cycle == 1 ||
+<        afl->in_bitmap || afl->crash_mode)) {
+< 
+<     SAYF(bV bSTOP "   last new path : " cRST "%-33s ",
+<          DTD(cur_ms, afl->last_path_time));
+< 
+<   } else {
+< 
+<     if (afl->dumb_mode)
+< 
+<       SAYF(bV bSTOP "   last new path : " cPIN "n/a" cRST
+<                     " (non-instrumented mode)       ");
+< 
+<     else
+< 
+<       SAYF(bV bSTOP "   last new path : " cRST "none yet " cLRD
+<                     "(odd, check syntax!)     ");
+< 
+<   }
+< 
+<   SAYF(bSTG bV bSTOP "  total paths : " cRST "%-5s " bSTG bV "\n",
+<        DI(afl->queued_paths));
+< 
+<   /* Highlight crashes in red if found, denote going over the KEEP_UNIQUE_CRASH
+<      limit with a '+' appended to the count. */
+< 
+<   sprintf(tmp, "%s%s", DI(afl->unique_crashes),
+<           (afl->unique_crashes >= KEEP_UNIQUE_CRASH) ? "+" : "");
+< 
+<   SAYF(bV bSTOP " last uniq crash : " cRST "%-33s " bSTG bV bSTOP
+<                 " uniq crashes : %s%-6s" bSTG               bV "\n",
+<        DTD(cur_ms, afl->last_crash_time), afl->unique_crashes ? cLRD : cRST,
+<        tmp);
+< 
+<   sprintf(tmp, "%s%s", DI(afl->unique_hangs),
+<           (afl->unique_hangs >= KEEP_UNIQUE_HANG) ? "+" : "");
+< 
+<   SAYF(bV bSTOP "  last uniq hang : " cRST "%-33s " bSTG bV bSTOP
+<                 "   uniq hangs : " cRST "%-6s" bSTG         bV "\n",
+<        DTD(cur_ms, afl->last_hang_time), tmp);
+< 
+<   SAYF(bVR bH bSTOP            cCYA
+<        " cycle progress " bSTG bH10 bH5 bH2 bH2 bHB bH bSTOP cCYA
+<        " map coverage " bSTG bH bHT bH20 bH2 bVL "\n");
+< 
+<   /* This gets funny because we want to print several variable-length variables
+<      together, but then cram them into a fixed-width field - so we need to
+<      put them in a temporary buffer first. */
+< 
+<   sprintf(tmp, "%s%s%u (%0.01f%%)", DI(afl->current_entry),
+<           afl->queue_cur->favored ? "." : "*", afl->queue_cur->fuzz_level,
+<           ((double)afl->current_entry * 100) / afl->queued_paths);
+< 
+<   SAYF(bV bSTOP "  now processing : " cRST "%-16s " bSTG bV bSTOP, tmp);
+< 
+<   sprintf(tmp, "%0.02f%% / %0.02f%%",
+<           ((double)afl->queue_cur->bitmap_size) * 100 / MAP_SIZE, t_byte_ratio);
+< 
+<   SAYF("    map density : %s%-21s" bSTG bV "\n",
+<        t_byte_ratio > 70 ? cLRD
+<                          : ((t_bytes < 200 && !afl->dumb_mode) ? cPIN : cRST),
+<        tmp);
+< 
+<   sprintf(tmp, "%s (%0.02f%%)", DI(afl->cur_skipped_paths),
+<           ((double)afl->cur_skipped_paths * 100) / afl->queued_paths);
+< 
+<   SAYF(bV bSTOP " paths timed out : " cRST "%-16s " bSTG bV, tmp);
+< 
+<   sprintf(tmp, "%0.02f bits/tuple", t_bytes ? (((double)t_bits) / t_bytes) : 0);
+< 
+<   SAYF(bSTOP " count coverage : " cRST "%-21s" bSTG bV "\n", tmp);
+< 
+<   SAYF(bVR bH bSTOP            cCYA
+<        " stage progress " bSTG bH10 bH5 bH2 bH2 bX bH bSTOP cCYA
+<        " findings in depth " bSTG bH10 bH5 bH2 bH2 bVL "\n");
+< 
+<   sprintf(tmp, "%s (%0.02f%%)", DI(afl->queued_favored),
+<           ((double)afl->queued_favored) * 100 / afl->queued_paths);
+< 
+<   /* Yeah... it's still going on... halp? */
+< 
+<   SAYF(bV bSTOP "  now trying : " cRST "%-20s " bSTG bV bSTOP
+<                 " favored paths : " cRST "%-22s" bSTG   bV "\n",
+<        afl->stage_name, tmp);
+< 
+<   if (!afl->stage_max) {
+< 
+<     sprintf(tmp, "%s/-", DI(afl->stage_cur));
+< 
+<   } else {
+< 
+<     sprintf(tmp, "%s/%s (%0.02f%%)", DI(afl->stage_cur), DI(afl->stage_max),
+<             ((double)afl->stage_cur) * 100 / afl->stage_max);
+< 
+<   }
+< 
+<   SAYF(bV bSTOP " stage execs : " cRST "%-21s" bSTG bV bSTOP, tmp);
+< 
+<   sprintf(tmp, "%s (%0.02f%%)", DI(afl->queued_with_cov),
+<           ((double)afl->queued_with_cov) * 100 / afl->queued_paths);
+< 
+<   SAYF("  new edges on : " cRST "%-22s" bSTG bV "\n", tmp);
+< 
+<   sprintf(tmp, "%s (%s%s unique)", DI(afl->total_crashes),
+<           DI(afl->unique_crashes),
+<           (afl->unique_crashes >= KEEP_UNIQUE_CRASH) ? "+" : "");
+< 
+<   if (afl->crash_mode) {
+< 
+<     SAYF(bV bSTOP " total execs : " cRST "%-20s " bSTG bV bSTOP
+<                   "   new crashes : %s%-22s" bSTG         bV "\n",
+<          DI(afl->total_execs), afl->unique_crashes ? cLRD : cRST, tmp);
+< 
+<   } else {
+< 
+<     SAYF(bV bSTOP " total execs : " cRST "%-20s " bSTG bV bSTOP
+<                   " total crashes : %s%-22s" bSTG         bV "\n",
+<          DI(afl->total_execs), afl->unique_crashes ? cLRD : cRST, tmp);
+< 
+<   }
+< 
+<   /* Show a warning about slow execution. */
+< 
+<   if (avg_exec < 100) {
+< 
+<     sprintf(tmp, "%s/sec (%s)", DF(avg_exec),
+<             avg_exec < 20 ? "zzzz..." : "slow!");
+< 
+<     SAYF(bV bSTOP "  exec speed : " cLRD "%-20s ", tmp);
+< 
+<   } else {
+< 
+<     sprintf(tmp, "%s/sec", DF(avg_exec));
+<     SAYF(bV bSTOP "  exec speed : " cRST "%-20s ", tmp);
+< 
+<   }
+< 
+<   sprintf(tmp, "%s (%s%s unique)", DI(afl->total_tmouts),
+<           DI(afl->unique_tmouts),
+<           (afl->unique_hangs >= KEEP_UNIQUE_HANG) ? "+" : "");
+< 
+<   SAYF(bSTG bV bSTOP "  total tmouts : " cRST "%-22s" bSTG bV "\n", tmp);
+< 
+<   /* Aaaalmost there... hold on! */
+< 
+<   SAYF(bVR bH cCYA                      bSTOP
+<        " fuzzing strategy yields " bSTG bH10 bHT bH10 bH5 bHB bH bSTOP cCYA
+<        " path geometry " bSTG bH5 bH2 bVL "\n");
+< 
+<   if (afl->skip_deterministic) {
+< 
+<     strcpy(tmp, "n/a, n/a, n/a");
+< 
+<   } else {
+< 
+<     sprintf(
+<         tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_FLIP1]),
+<         DI(afl->stage_cycles[STAGE_FLIP1]), DI(afl->stage_finds[STAGE_FLIP2]),
+<         DI(afl->stage_cycles[STAGE_FLIP2]), DI(afl->stage_finds[STAGE_FLIP4]),
+<         DI(afl->stage_cycles[STAGE_FLIP4]));
+< 
+<   }
+< 
+<   SAYF(bV bSTOP "   bit flips : " cRST "%-36s " bSTG bV bSTOP
+<                 "    levels : " cRST "%-10s" bSTG       bV "\n",
+<        tmp, DI(afl->max_depth));
+< 
+<   if (!afl->skip_deterministic)
+<     sprintf(
+<         tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_FLIP8]),
+<         DI(afl->stage_cycles[STAGE_FLIP8]), DI(afl->stage_finds[STAGE_FLIP16]),
+<         DI(afl->stage_cycles[STAGE_FLIP16]), DI(afl->stage_finds[STAGE_FLIP32]),
+<         DI(afl->stage_cycles[STAGE_FLIP32]));
+< 
+<   SAYF(bV bSTOP "  byte flips : " cRST "%-36s " bSTG bV bSTOP
+<                 "   pending : " cRST "%-10s" bSTG       bV "\n",
+<        tmp, DI(afl->pending_not_fuzzed));
+< 
+<   if (!afl->skip_deterministic)
+<     sprintf(tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_ARITH8]),
+<             DI(afl->stage_cycles[STAGE_ARITH8]),
+<             DI(afl->stage_finds[STAGE_ARITH16]),
+<             DI(afl->stage_cycles[STAGE_ARITH16]),
+<             DI(afl->stage_finds[STAGE_ARITH32]),
+<             DI(afl->stage_cycles[STAGE_ARITH32]));
+< 
+<   SAYF(bV bSTOP " arithmetics : " cRST "%-36s " bSTG bV bSTOP
+<                 "  pend fav : " cRST "%-10s" bSTG       bV "\n",
+<        tmp, DI(afl->pending_favored));
+< 
+<   if (!afl->skip_deterministic)
+<     sprintf(tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_INTEREST8]),
+<             DI(afl->stage_cycles[STAGE_INTEREST8]),
+<             DI(afl->stage_finds[STAGE_INTEREST16]),
+<             DI(afl->stage_cycles[STAGE_INTEREST16]),
+<             DI(afl->stage_finds[STAGE_INTEREST32]),
+<             DI(afl->stage_cycles[STAGE_INTEREST32]));
+< 
+<   SAYF(bV bSTOP "  known ints : " cRST "%-36s " bSTG bV bSTOP
+<                 " own finds : " cRST "%-10s" bSTG       bV "\n",
+<        tmp, DI(afl->queued_discovered));
+< 
+<   if (!afl->skip_deterministic)
+<     sprintf(tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_EXTRAS_UO]),
+<             DI(afl->stage_cycles[STAGE_EXTRAS_UO]),
+<             DI(afl->stage_finds[STAGE_EXTRAS_UI]),
+<             DI(afl->stage_cycles[STAGE_EXTRAS_UI]),
+<             DI(afl->stage_finds[STAGE_EXTRAS_AO]),
+<             DI(afl->stage_cycles[STAGE_EXTRAS_AO]));
+< 
+<   SAYF(bV bSTOP "  dictionary : " cRST "%-36s " bSTG bV bSTOP
+<                 "  imported : " cRST "%-10s" bSTG       bV "\n",
+<        tmp, afl->sync_id ? DI(afl->queued_imported) : (u8 *)"n/a");
+< 
+<   sprintf(
+<       tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_HAVOC]),
+<       DI(afl->stage_cycles[STAGE_HAVOC]), DI(afl->stage_finds[STAGE_SPLICE]),
+<       DI(afl->stage_cycles[STAGE_SPLICE]), DI(afl->stage_finds[STAGE_RADAMSA]),
+<       DI(afl->stage_cycles[STAGE_RADAMSA]));
+< 
+<   SAYF(bV bSTOP "   havoc/rad : " cRST "%-36s " bSTG bV bSTOP, tmp);
+< 
+<   if (t_bytes)
+<     sprintf(tmp, "%0.02f%%", stab_ratio);
+<   else
+<     strcpy(tmp, "n/a");
+< 
+<   SAYF(" stability : %s%-10s" bSTG bV "\n",
+<        (stab_ratio < 85 && afl->var_byte_count > 40)
+<            ? cLRD
+<            : ((afl->queued_variable &&
+<                (!afl->persistent_mode || afl->var_byte_count > 20))
+<                   ? cMGN
+<                   : cRST),
+<        tmp);
+< 
+<   if (afl->shm.cmplog_mode) {
+< 
+<     sprintf(tmp, "%s/%s, %s/%s, %s/%s, %s/%s",
+<             DI(afl->stage_finds[STAGE_PYTHON]),
+<             DI(afl->stage_cycles[STAGE_PYTHON]),
+<             DI(afl->stage_finds[STAGE_CUSTOM_MUTATOR]),
+<             DI(afl->stage_cycles[STAGE_CUSTOM_MUTATOR]),
+<             DI(afl->stage_finds[STAGE_COLORIZATION]),
+<             DI(afl->stage_cycles[STAGE_COLORIZATION]),
+<             DI(afl->stage_finds[STAGE_ITS]), DI(afl->stage_cycles[STAGE_ITS]));
+< 
+<     SAYF(bV bSTOP "   custom/rq : " cRST "%-36s " bSTG bVR bH20 bH2 bH bRB "\n",
+<          tmp);
+< 
+<   } else {
+< 
+<     sprintf(tmp, "%s/%s, %s/%s", DI(afl->stage_finds[STAGE_PYTHON]),
+<             DI(afl->stage_cycles[STAGE_PYTHON]),
+<             DI(afl->stage_finds[STAGE_CUSTOM_MUTATOR]),
+<             DI(afl->stage_cycles[STAGE_CUSTOM_MUTATOR]));
+< 
+<     SAYF(bV bSTOP "   py/custom : " cRST "%-36s " bSTG bVR bH20 bH2 bH bRB "\n",
+<          tmp);
+< 
+<   }
+< 
+<   if (!afl->bytes_trim_out) {
+< 
+<     sprintf(tmp, "n/a, ");
+< 
+<   } else {
+< 
+<     sprintf(tmp, "%0.02f%%/%s, ",
+<             ((double)(afl->bytes_trim_in - afl->bytes_trim_out)) * 100 /
+<                 afl->bytes_trim_in,
+<             DI(afl->trim_execs));
+< 
+<   }
+< 
+<   if (!afl->blocks_eff_total) {
+< 
+<     u8 tmp2[128];
+< 
+<     sprintf(tmp2, "n/a");
+<     strcat(tmp, tmp2);
+< 
+<   } else {
+< 
+<     u8 tmp2[128];
+< 
+<     sprintf(tmp2, "%0.02f%%",
+<             ((double)(afl->blocks_eff_total - afl->blocks_eff_select)) * 100 /
+<                 afl->blocks_eff_total);
+< 
+<     strcat(tmp, tmp2);
+< 
+<   }
+< 
+<   if (afl->mutator) {
+< 
+<     sprintf(tmp, "%s/%s", DI(afl->stage_finds[STAGE_CUSTOM_MUTATOR]),
+<             DI(afl->stage_cycles[STAGE_CUSTOM_MUTATOR]));
+<     SAYF(bV bSTOP " custom mut. : " cRST "%-36s " bSTG bV RESET_G1, tmp);
+< 
+<   } else {
+< 
+<     SAYF(bV bSTOP "        trim : " cRST "%-36s " bSTG bV RESET_G1, tmp);
+< 
+<   }
+< 
+<   /* Provide some CPU utilization stats. */
+< 
+<   if (afl->cpu_core_count) {
+< 
+<     double cur_runnable = get_runnable_processes();
+<     u32    cur_utilization = cur_runnable * 100 / afl->cpu_core_count;
+< 
+<     u8 *cpu_color = cCYA;
+< 
+<     /* If we could still run one or more processes, use green. */
+< 
+<     if (afl->cpu_core_count > 1 && cur_runnable + 1 <= afl->cpu_core_count)
+<       cpu_color = cLGN;
+< 
+<     /* If we're clearly oversubscribed, use red. */
+< 
+<     if (!afl->no_cpu_meter_red && cur_utilization >= 150) cpu_color = cLRD;
+< 
+< #ifdef HAVE_AFFINITY
+< 
+<     if (afl->cpu_aff >= 0) {
+< 
+<       SAYF(SP10 cGRA "[cpu%03u:%s%3u%%" cGRA "]\r" cRST, MIN(afl->cpu_aff, 999),
+<            cpu_color, MIN(cur_utilization, 999));
+< 
+<     } else {
+< 
+<       SAYF(SP10 cGRA "   [cpu:%s%3u%%" cGRA "]\r" cRST, cpu_color,
+<            MIN(cur_utilization, 999));
+< 
+<     }
+< 
+< #else
+< 
+<     SAYF(SP10 cGRA "   [cpu:%s%3u%%" cGRA "]\r" cRST, cpu_color,
+<          MIN(cur_utilization, 999));
+< 
+< #endif                                                    /* ^HAVE_AFFINITY */
+< 
+<   } else
+< 
+<     SAYF("\r");
+< 
+<   /* Last line */
+<   SAYF(SET_G1 "\n" bSTG bLB bH30 bH20 bH2 bRB bSTOP cRST RESET_G1);
+< 
+<   /* Hallelujah! */
+< 
+<   fflush(0);
+---
+> //  /* Lord, forgive me this. */
+> //
+> //  SAYF(SET_G1 bSTG bLT bH bSTOP cCYA
+> //       " process timing " bSTG bH30 bH5 bH bHB bH bSTOP cCYA
+> //       " overall results " bSTG bH2 bH2 bRT "\n");
+> //
+> //  if (afl->dumb_mode) {
+> //
+> //    strcpy(tmp, cRST);
+> //
+> //  } else {
+> //
+> //    u64 min_wo_finds = (cur_ms - afl->last_path_time) / 1000 / 60;
+> //
+> //    /* First queue cycle: don't stop now! */
+> //    if (afl->queue_cycle == 1 || min_wo_finds < 15)
+> //      strcpy(tmp, cMGN);
+> //    else
+> //
+> //        /* Subsequent cycles, but we're still making finds. */
+> //        if (afl->cycles_wo_finds < 25 || min_wo_finds < 30)
+> //      strcpy(tmp, cYEL);
+> //    else
+> //
+> //        /* No finds for a long time and no test cases to try. */
+> //        if (afl->cycles_wo_finds > 100 && !afl->pending_not_fuzzed &&
+> //            min_wo_finds > 120)
+> //      strcpy(tmp, cLGN);
+> //
+> //    /* Default: cautiously OK to stop? */
+> //    else
+> //      strcpy(tmp, cLBL);
+> //
+> //  }
+> //
+> //  SAYF(bV bSTOP "        run time : " cRST "%-33s " bSTG bV bSTOP
+> //                "  cycles done : %s%-5s " bSTG              bV "\n",
+> //       DTD(cur_ms, afl->start_time), tmp, DI(afl->queue_cycle - 1));
+> //
+> //  /* We want to warn people about not seeing new paths after a full cycle,
+> //     except when resuming fuzzing or running in non-instrumented mode. */
+> //
+> //  if (!afl->dumb_mode &&
+> //      (afl->last_path_time || afl->resuming_fuzz || afl->queue_cycle == 1 ||
+> //       afl->in_bitmap || afl->crash_mode)) {
+> //
+> //    SAYF(bV bSTOP "   last new path : " cRST "%-33s ",
+> //         DTD(cur_ms, afl->last_path_time));
+> //
+> //  } else {
+> //
+> //    if (afl->dumb_mode)
+> //
+> //      SAYF(bV bSTOP "   last new path : " cPIN "n/a" cRST
+> //                    " (non-instrumented mode)       ");
+> //
+> //    else
+> //
+> //      SAYF(bV bSTOP "   last new path : " cRST "none yet " cLRD
+> //                    "(odd, check syntax!)     ");
+> //
+> //  }
+> //
+> //  SAYF(bSTG bV bSTOP "  total paths : " cRST "%-5s " bSTG bV "\n",
+> //       DI(afl->queued_paths));
+> //
+> //  /* Highlight crashes in red if found, denote going over the KEEP_UNIQUE_CRASH
+> //     limit with a '+' appended to the count. */
+> //
+> //  sprintf(tmp, "%s%s", DI(afl->unique_crashes),
+> //          (afl->unique_crashes >= KEEP_UNIQUE_CRASH) ? "+" : "");
+> //
+> //  SAYF(bV bSTOP " last uniq crash : " cRST "%-33s " bSTG bV bSTOP
+> //                " uniq crashes : %s%-6s" bSTG               bV "\n",
+> //       DTD(cur_ms, afl->last_crash_time), afl->unique_crashes ? cLRD : cRST,
+> //       tmp);
+> //
+> //  sprintf(tmp, "%s%s", DI(afl->unique_hangs),
+> //          (afl->unique_hangs >= KEEP_UNIQUE_HANG) ? "+" : "");
+> //
+> //  SAYF(bV bSTOP "  last uniq hang : " cRST "%-33s " bSTG bV bSTOP
+> //                "   uniq hangs : " cRST "%-6s" bSTG         bV "\n",
+> //       DTD(cur_ms, afl->last_hang_time), tmp);
+> //
+> //  SAYF(bVR bH bSTOP            cCYA
+> //       " cycle progress " bSTG bH10 bH5 bH2 bH2 bHB bH bSTOP cCYA
+> //       " map coverage " bSTG bH bHT bH20 bH2 bVL "\n");
+> //
+> //  /* This gets funny because we want to print several variable-length variables
+> //     together, but then cram them into a fixed-width field - so we need to
+> //     put them in a temporary buffer first. */
+> //
+> //  sprintf(tmp, "%s%s%u (%0.01f%%)", DI(afl->current_entry),
+> //          afl->queue_cur->favored ? "." : "*", afl->queue_cur->fuzz_level,
+> //          ((double)afl->current_entry * 100) / afl->queued_paths);
+> //
+> //  SAYF(bV bSTOP "  now processing : " cRST "%-16s " bSTG bV bSTOP, tmp);
+> //
+> //  sprintf(tmp, "%0.02f%% / %0.02f%%",
+> //          ((double)afl->queue_cur->bitmap_size) * 100 / MAP_SIZE, t_byte_ratio);
+> //
+> //  SAYF("    map density : %s%-21s" bSTG bV "\n",
+> //       t_byte_ratio > 70 ? cLRD
+> //                         : ((t_bytes < 200 && !afl->dumb_mode) ? cPIN : cRST),
+> //       tmp);
+> //
+> //  sprintf(tmp, "%s (%0.02f%%)", DI(afl->cur_skipped_paths),
+> //          ((double)afl->cur_skipped_paths * 100) / afl->queued_paths);
+> //
+> //  SAYF(bV bSTOP " paths timed out : " cRST "%-16s " bSTG bV, tmp);
+> //
+> //  sprintf(tmp, "%0.02f bits/tuple", t_bytes ? (((double)t_bits) / t_bytes) : 0);
+> //
+> //  SAYF(bSTOP " count coverage : " cRST "%-21s" bSTG bV "\n", tmp);
+> //
+> //  SAYF(bVR bH bSTOP            cCYA
+> //       " stage progress " bSTG bH10 bH5 bH2 bH2 bX bH bSTOP cCYA
+> //       " findings in depth " bSTG bH10 bH5 bH2 bH2 bVL "\n");
+> //
+> //  sprintf(tmp, "%s (%0.02f%%)", DI(afl->queued_favored),
+> //          ((double)afl->queued_favored) * 100 / afl->queued_paths);
+> //
+> //  /* Yeah... it's still going on... halp? */
+> //
+> //  SAYF(bV bSTOP "  now trying : " cRST "%-20s " bSTG bV bSTOP
+> //                " favored paths : " cRST "%-22s" bSTG   bV "\n",
+> //       afl->stage_name, tmp);
+> //
+> //  if (!afl->stage_max) {
+> //
+> //    sprintf(tmp, "%s/-", DI(afl->stage_cur));
+> //
+> //  } else {
+> //
+> //    sprintf(tmp, "%s/%s (%0.02f%%)", DI(afl->stage_cur), DI(afl->stage_max),
+> //            ((double)afl->stage_cur) * 100 / afl->stage_max);
+> //
+> //  }
+> //
+> //  SAYF(bV bSTOP " stage execs : " cRST "%-21s" bSTG bV bSTOP, tmp);
+> //
+> //  sprintf(tmp, "%s (%0.02f%%)", DI(afl->queued_with_cov),
+> //          ((double)afl->queued_with_cov) * 100 / afl->queued_paths);
+> //
+> //  SAYF("  new edges on : " cRST "%-22s" bSTG bV "\n", tmp);
+> //
+> //  sprintf(tmp, "%s (%s%s unique)", DI(afl->total_crashes),
+> //          DI(afl->unique_crashes),
+> //          (afl->unique_crashes >= KEEP_UNIQUE_CRASH) ? "+" : "");
+> //
+> //  if (afl->crash_mode) {
+> //
+> //    SAYF(bV bSTOP " total execs : " cRST "%-20s " bSTG bV bSTOP
+> //                  "   new crashes : %s%-22s" bSTG         bV "\n",
+> //         DI(afl->total_execs), afl->unique_crashes ? cLRD : cRST, tmp);
+> //
+> //  } else {
+> //
+> //    SAYF(bV bSTOP " total execs : " cRST "%-20s " bSTG bV bSTOP
+> //                  " total crashes : %s%-22s" bSTG         bV "\n",
+> //         DI(afl->total_execs), afl->unique_crashes ? cLRD : cRST, tmp);
+> //
+> //  }
+> //
+> //  /* Show a warning about slow execution. */
+> //
+> //  if (avg_exec < 100) {
+> //
+> //    sprintf(tmp, "%s/sec (%s)", DF(avg_exec),
+> //            avg_exec < 20 ? "zzzz..." : "slow!");
+> //
+> //    SAYF(bV bSTOP "  exec speed : " cLRD "%-20s ", tmp);
+> //
+> //  } else {
+> //
+> //    sprintf(tmp, "%s/sec", DF(avg_exec));
+> //    SAYF(bV bSTOP "  exec speed : " cRST "%-20s ", tmp);
+> //
+> //  }
+> //
+> //  sprintf(tmp, "%s (%s%s unique)", DI(afl->total_tmouts),
+> //          DI(afl->unique_tmouts),
+> //          (afl->unique_hangs >= KEEP_UNIQUE_HANG) ? "+" : "");
+> //
+> //  SAYF(bSTG bV bSTOP "  total tmouts : " cRST "%-22s" bSTG bV "\n", tmp);
+> //
+> //  /* Aaaalmost there... hold on! */
+> //
+> //  SAYF(bVR bH cCYA                      bSTOP
+> //       " fuzzing strategy yields " bSTG bH10 bHT bH10 bH5 bHB bH bSTOP cCYA
+> //       " path geometry " bSTG bH5 bH2 bVL "\n");
+> //
+> //  if (afl->skip_deterministic) {
+> //
+> //    strcpy(tmp, "n/a, n/a, n/a");
+> //
+> //  } else {
+> //
+> //    sprintf(
+> //        tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_FLIP1]),
+> //        DI(afl->stage_cycles[STAGE_FLIP1]), DI(afl->stage_finds[STAGE_FLIP2]),
+> //        DI(afl->stage_cycles[STAGE_FLIP2]), DI(afl->stage_finds[STAGE_FLIP4]),
+> //        DI(afl->stage_cycles[STAGE_FLIP4]));
+> //
+> //  }
+> //
+> //  SAYF(bV bSTOP "   bit flips : " cRST "%-36s " bSTG bV bSTOP
+> //                "    levels : " cRST "%-10s" bSTG       bV "\n",
+> //       tmp, DI(afl->max_depth));
+> //
+> //  if (!afl->skip_deterministic)
+> //    sprintf(
+> //        tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_FLIP8]),
+> //        DI(afl->stage_cycles[STAGE_FLIP8]), DI(afl->stage_finds[STAGE_FLIP16]),
+> //        DI(afl->stage_cycles[STAGE_FLIP16]), DI(afl->stage_finds[STAGE_FLIP32]),
+> //        DI(afl->stage_cycles[STAGE_FLIP32]));
+> //
+> //  SAYF(bV bSTOP "  byte flips : " cRST "%-36s " bSTG bV bSTOP
+> //                "   pending : " cRST "%-10s" bSTG       bV "\n",
+> //       tmp, DI(afl->pending_not_fuzzed));
+> //
+> //  if (!afl->skip_deterministic)
+> //    sprintf(tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_ARITH8]),
+> //            DI(afl->stage_cycles[STAGE_ARITH8]),
+> //            DI(afl->stage_finds[STAGE_ARITH16]),
+> //            DI(afl->stage_cycles[STAGE_ARITH16]),
+> //            DI(afl->stage_finds[STAGE_ARITH32]),
+> //            DI(afl->stage_cycles[STAGE_ARITH32]));
+> //
+> //  SAYF(bV bSTOP " arithmetics : " cRST "%-36s " bSTG bV bSTOP
+> //                "  pend fav : " cRST "%-10s" bSTG       bV "\n",
+> //       tmp, DI(afl->pending_favored));
+> //
+> //  if (!afl->skip_deterministic)
+> //    sprintf(tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_INTEREST8]),
+> //            DI(afl->stage_cycles[STAGE_INTEREST8]),
+> //            DI(afl->stage_finds[STAGE_INTEREST16]),
+> //            DI(afl->stage_cycles[STAGE_INTEREST16]),
+> //            DI(afl->stage_finds[STAGE_INTEREST32]),
+> //            DI(afl->stage_cycles[STAGE_INTEREST32]));
+> //
+> //  SAYF(bV bSTOP "  known ints : " cRST "%-36s " bSTG bV bSTOP
+> //                " own finds : " cRST "%-10s" bSTG       bV "\n",
+> //       tmp, DI(afl->queued_discovered));
+> //
+> //  if (!afl->skip_deterministic)
+> //    sprintf(tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_EXTRAS_UO]),
+> //            DI(afl->stage_cycles[STAGE_EXTRAS_UO]),
+> //            DI(afl->stage_finds[STAGE_EXTRAS_UI]),
+> //            DI(afl->stage_cycles[STAGE_EXTRAS_UI]),
+> //            DI(afl->stage_finds[STAGE_EXTRAS_AO]),
+> //            DI(afl->stage_cycles[STAGE_EXTRAS_AO]));
+> //
+> //  SAYF(bV bSTOP "  dictionary : " cRST "%-36s " bSTG bV bSTOP
+> //                "  imported : " cRST "%-10s" bSTG       bV "\n",
+> //       tmp, afl->sync_id ? DI(afl->queued_imported) : (u8 *)"n/a");
+> //
+> //  sprintf(
+> //      tmp, "%s/%s, %s/%s, %s/%s", DI(afl->stage_finds[STAGE_HAVOC]),
+> //      DI(afl->stage_cycles[STAGE_HAVOC]), DI(afl->stage_finds[STAGE_SPLICE]),
+> //      DI(afl->stage_cycles[STAGE_SPLICE]), DI(afl->stage_finds[STAGE_RADAMSA]),
+> //      DI(afl->stage_cycles[STAGE_RADAMSA]));
+> //
+> //  SAYF(bV bSTOP "   havoc/rad : " cRST "%-36s " bSTG bV bSTOP, tmp);
+> //
+> //  if (t_bytes)
+> //    sprintf(tmp, "%0.02f%%", stab_ratio);
+> //  else
+> //    strcpy(tmp, "n/a");
+> //
+> //  SAYF(" stability : %s%-10s" bSTG bV "\n",
+> //       (stab_ratio < 85 && afl->var_byte_count > 40)
+> //           ? cLRD
+> //           : ((afl->queued_variable &&
+> //               (!afl->persistent_mode || afl->var_byte_count > 20))
+> //                  ? cMGN
+> //                  : cRST),
+> //       tmp);
+> //
+> //  if (afl->shm.cmplog_mode) {
+> //
+> //    sprintf(tmp, "%s/%s, %s/%s, %s/%s, %s/%s",
+> //            DI(afl->stage_finds[STAGE_PYTHON]),
+> //            DI(afl->stage_cycles[STAGE_PYTHON]),
+> //            DI(afl->stage_finds[STAGE_CUSTOM_MUTATOR]),
+> //            DI(afl->stage_cycles[STAGE_CUSTOM_MUTATOR]),
+> //            DI(afl->stage_finds[STAGE_COLORIZATION]),
+> //            DI(afl->stage_cycles[STAGE_COLORIZATION]),
+> //            DI(afl->stage_finds[STAGE_ITS]), DI(afl->stage_cycles[STAGE_ITS]));
+> //
+> //    SAYF(bV bSTOP "   custom/rq : " cRST "%-36s " bSTG bVR bH20 bH2 bH bRB "\n",
+> //         tmp);
+> //
+> //  } else {
+> //
+> //    sprintf(tmp, "%s/%s, %s/%s", DI(afl->stage_finds[STAGE_PYTHON]),
+> //            DI(afl->stage_cycles[STAGE_PYTHON]),
+> //            DI(afl->stage_finds[STAGE_CUSTOM_MUTATOR]),
+> //            DI(afl->stage_cycles[STAGE_CUSTOM_MUTATOR]));
+> //
+> //    SAYF(bV bSTOP "   py/custom : " cRST "%-36s " bSTG bVR bH20 bH2 bH bRB "\n",
+> //         tmp);
+> //
+> //  }
+> //
+> //  if (!afl->bytes_trim_out) {
+> //
+> //    sprintf(tmp, "n/a, ");
+> //
+> //  } else {
+> //
+> //    sprintf(tmp, "%0.02f%%/%s, ",
+> //            ((double)(afl->bytes_trim_in - afl->bytes_trim_out)) * 100 /
+> //                afl->bytes_trim_in,
+> //            DI(afl->trim_execs));
+> //
+> //  }
+> //
+> //  if (!afl->blocks_eff_total) {
+> //
+> //    u8 tmp2[128];
+> //
+> //    sprintf(tmp2, "n/a");
+> //    strcat(tmp, tmp2);
+> //
+> //  } else {
+> //
+> //    u8 tmp2[128];
+> //
+> //    sprintf(tmp2, "%0.02f%%",
+> //            ((double)(afl->blocks_eff_total - afl->blocks_eff_select)) * 100 /
+> //                afl->blocks_eff_total);
+> //
+> //    strcat(tmp, tmp2);
+> //
+> //  }
+> //
+> //  if (afl->mutator) {
+> //
+> //    sprintf(tmp, "%s/%s", DI(afl->stage_finds[STAGE_CUSTOM_MUTATOR]),
+> //            DI(afl->stage_cycles[STAGE_CUSTOM_MUTATOR]));
+> //    SAYF(bV bSTOP " custom mut. : " cRST "%-36s " bSTG bV RESET_G1, tmp);
+> //
+> //  } else {
+> //
+> //    SAYF(bV bSTOP "        trim : " cRST "%-36s " bSTG bV RESET_G1, tmp);
+> //
+> //  }
+> //
+> //  /* Provide some CPU utilization stats. */
+> //
+> //  if (afl->cpu_core_count) {
+> //
+> //    double cur_runnable = get_runnable_processes();
+> //    u32    cur_utilization = cur_runnable * 100 / afl->cpu_core_count;
+> //
+> //    u8 *cpu_color = cCYA;
+> //
+> //    /* If we could still run one or more processes, use green. */
+> //
+> //    if (afl->cpu_core_count > 1 && cur_runnable + 1 <= afl->cpu_core_count)
+> //      cpu_color = cLGN;
+> //
+> //    /* If we're clearly oversubscribed, use red. */
+> //
+> //    if (!afl->no_cpu_meter_red && cur_utilization >= 150) cpu_color = cLRD;
+> //
+> //#ifdef HAVE_AFFINITY
+> //
+> //    if (afl->cpu_aff >= 0) {
+> //
+> //      SAYF(SP10 cGRA "[cpu%03u:%s%3u%%" cGRA "]\r" cRST, MIN(afl->cpu_aff, 999),
+> //           cpu_color, MIN(cur_utilization, 999));
+> //
+> //    } else {
+> //
+> //      SAYF(SP10 cGRA "   [cpu:%s%3u%%" cGRA "]\r" cRST, cpu_color,
+> //           MIN(cur_utilization, 999));
+> //
+> //    }
+> //
+> //#else
+> //
+> //    SAYF(SP10 cGRA "   [cpu:%s%3u%%" cGRA "]\r" cRST, cpu_color,
+> //         MIN(cur_utilization, 999));
+> //
+> //#endif                                                    /* ^HAVE_AFFINITY */
+> //
+> //  } else
+> //
+> //    SAYF("\r");
+> //
+> //  /* Last line */
+> //  SAYF(SET_G1 "\n" bSTG bLB bH30 bH20 bH2 bRB bSTOP cRST RESET_G1);
+> //
+> //  /* Hallelujah! */
+> //
+> //  fflush(0);
